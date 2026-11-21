@@ -1,0 +1,45 @@
+name: Build EN-01 single-file
+
+on:
+  push:
+    paths:
+      - 'engine-3d/**'
+      - '.github/workflows/build-engine.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Fetch three r149 (UMD)
+        run: |
+          mkdir -p engine-3d/vendor
+          curl -fsSL -o engine-3d/vendor/three.classic.js https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js
+
+      - name: Build interactive + film
+        working-directory: engine-3d
+        run: |
+          node build.js
+          node build-film.js
+
+      - name: Commit built files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add engine-3d/engine-3d.html engine-3d/engine-3d-film.html
+          if git diff --staged --quiet; then
+            echo "no change"
+            exit 0
+          fi
+          git commit -m "build(engine-3d): 自动生成单文件 [skip ci]"
+          git push
