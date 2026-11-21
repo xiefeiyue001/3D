@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EN-01 · 液氧煤油发动机 · 分解总装</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23090a0c'/><path d='M16 4c4 3 7 7 7 0v18h-3v-18z' fill='%23f2a73b'/></svg>">
+<style>
+:root{
+  --ink:#e9e3d6; --dim:#8c8880; --line:rgba(233,227,214,.14);
+  --amber:#f2a73b; --amber-d:#a8741f; --bg:#05060a; --panel:rgba(12,14,18,.82);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:Bahnschrift,"DIN Alternate","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  overflow:hidden;-webkit-font-smoothing:antialiased}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block}
+
+/* ============ 顶栏 ============ */
+.tb{position:fixed;left:0;right:0;top:0;height:64px;z-index:20;display:flex;align-items:center;
+  padding:0 22px;gap:18px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(5,6,10,.92),rgba(5,6,10,0))}
+.tb .tag{font-size:11px;letter-spacing:.18em;color:var(--amber)}
+.tb h1{font-size:15px;letter-spacing:.12em;margin:0;font-weight:600}
+.tb .sub{font-size:10px;letter-spacing:.16em;color:var(--dim);margin-left:2px}
+.tb .spacer{flex:1}
+.tb .kv{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.tb .kv b{font-size:13px;letter-spacing:.06em}
+.tb .kv span{font-size:9px;letter-spacing:.16em;color:var(--dim)}
+
+/* ============ 左：部件清单 ============ */
+.lp{position:fixed;left:18px;top:84px;width:236px;z-index:19;
+  background:var(--panel);border:1px solid var(--line);border-radius:2px;
+  backdrop-filter:blur(9px);overflow:hidden}
+.lp-h{display:flex;align-items:center;justify-content:space-between;
+  padding:11px 13px 9px;border-bottom:1px solid var(--line)}
+.lp-h b{font-size:11px;letter-spacing:.14em}
+.lp-h span{font-size:9px;letter-spacing:.16em;color:var(--dim)}
+#partList{display:flex;flex-direction:column}
+.prow{display:flex;align-items:center;gap:10px;padding:8px 13px;border:0;background:transparent;
+  color:var(--ink);cursor:pointer;text-align:left;border-bottom:1px solid rgba(233,227,214,.06);
+  transition:background .18s}
+.prow:hover{background:rgba(242,167,59,.07)}
+.prow.on{background:rgba(242,167,59,.13)}
+.prow .pnum{font-style:normal;font-size:9.5px;letter-spacing:.1em;color:var(--dim);min-width:16px}
+.prow.on .pnum{color:var(--amber)}
+.prow .ptxt{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+.prow .ptxt b{font-size:12px;font-weight:600;letter-spacing:.04em}
+.prow .ptxt em{font-style:normal;font-size:8.5px;letter-spacing:.14em;color:var(--dim)}
+.prow .pdot{font-size:0;width:5px;height:5px;border-radius:50%;background:var(--dim);opacity:.5}
+.prow.on .pdot{background:var(--amber);opacity:1;box-shadow:0 0 8px var(--amber)}
+
+/* ============ 右：详情 ============ */
+.rp{position:fixed;right:18px;top:84px;width:270px;z-index:19;
+  background:var(--panel);border:1px solid var(--line);border-radius:2px;
+  backdrop-filter:blur(9px)}
+.rp-h{display:flex;align-items:center;justify-content:space-between;
+  padding:11px 13px 9px;border-bottom:1px solid var(--line)}
+.rp-h b{font-size:11px;letter-spacing:.14em}
+.rp-h span{font-size:9px;letter-spacing:.16em;color:var(--dim)}
+#detail{padding:13px}
+.d-empty{display:flex;flex-direction:column;gap:6px;padding:10px 0}
+.d-empty b{font-size:12px;letter-spacing:.08em}
+.d-empty span{font-size:10px;line-height:1.6;color:var(--dim)}
+.d-top{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+.d-top i{font-style:normal;font-size:10px;letter-spacing:.1em;color:var(--amber);
+  border:1px solid rgba(242,167,59,.4);padding:2px 5px;margin-top:2px}
+.d-top b{display:block;font-size:15px;letter-spacing:.06em}
+.d-top em{font-style:normal;font-size:9px;letter-spacing:.14em;color:var(--dim)}
+dl{margin:0;display:grid;grid-template-columns:44px 1fr;gap:6px 10px}
+dt{font-size:9.5px;letter-spacing:.12em;color:var(--dim);padding-top:2px}
+dd{margin:0;font-size:11px;line-height:1.5;color:var(--ink)}
+dd.d-func{grid-column:1/-1;color:#c9c4b8;border-top:1px solid rgba(233,227,214,.1);padding-top:8px;margin-top:2px}
+
+/* ============ 底部 dock ============ */
+.dock{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:21;
+  display:flex;align-items:center;gap:6px;padding:7px 9px;
+  background:rgba(10,12,16,.86);border:1px solid var(--line);border-radius:3px;backdrop-filter:blur(10px)}
+.dbtn{display:flex;align-items:center;gap:7px;padding:6px 10px;white-space:nowrap;flex:none;border:1px solid rgba(233,227,214,.1);
+  background:transparent;color:var(--ink);font-size:11px;letter-spacing:.08em;cursor:pointer;
+  border-radius:2px;transition:all .18s;font-family:inherit}
+.dbtn:hover{border-color:rgba(242,167,59,.45);color:#fff}
+.dbtn.on{background:rgba(242,167,59,.16);border-color:rgba(242,167,59,.6);color:#fff}
+.dbtn u{font-style:normal;font-size:9px;color:var(--dim);border:1px solid rgba(233,227,214,.2);
+  padding:0 3px;border-radius:2px;min-width:14px;text-align:center}
+.dsep{width:1px;height:24px;background:var(--line);margin:0 3px}
+.slide{display:flex;align-items:center;gap:8px;padding:0 8px;flex:none;white-space:nowrap}
+.slide span{font-size:9.5px;letter-spacing:.12em;color:var(--dim);white-space:nowrap}
+#explodeRange{-webkit-appearance:none;appearance:none;width:110px;height:2px;background:rgba(233,227,214,.2);outline:0}
+#explodeRange::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;
+  background:var(--amber);box-shadow:0 0 8px rgba(242,167,59,.7);cursor:pointer}
+.slide b{font-size:10px;color:var(--amber);min-width:30px;text-align:right}
+
+/* ============ 投影标签 ============ */
+#labels{position:fixed;inset:0;z-index:15;pointer-events:none;overflow:hidden}
+.plabel{position:absolute;left:0;top:0;opacity:0;transition:opacity .25s;white-space:nowrap;
+  transform-origin:50% 100%;display:flex;flex-direction:column;align-items:center;gap:1px}
+.plabel b{font-size:11px;letter-spacing:.06em;color:var(--ink);
+  background:rgba(8,10,13,.86);border:1px solid rgba(242,167,59,.32);padding:3px 8px;border-radius:2px}
+.plabel em{font-style:normal;font-size:8px;letter-spacing:.16em;color:var(--amber)}
+.plabel.sel b{border-color:rgba(242,167,59,.85);box-shadow:0 0 12px rgba(242,167,59,.25)}
+.pl-lead{position:absolute;left:50%;bottom:calc(-1 * var(--lead,10px) - 12px);width:1px;
+  height:calc(var(--lead,10px) + 12px);
+  background:linear-gradient(180deg,rgba(242,167,59,.65),rgba(242,167,59,0))}
+
+/* ============ 巡游字幕 ============ */
+.tourcap{position:fixed;left:280px;bottom:52px;z-index:22;opacity:0;transform:translateY(8px);
+  transition:opacity .5s,transform .5s;pointer-events:none}
+.tourcap.on{opacity:1;transform:none}
+.tc-num{font-size:10px;color:var(--amber);letter-spacing:.24em}
+.tc-t{font-size:25px;letter-spacing:.1em;font-weight:600;line-height:1.3;margin-top:3px;
+  text-shadow:0 2px 18px rgba(0,0,0,.85)}
+.tc-e{font-size:9px;letter-spacing:.22em;color:var(--dim);margin-top:3px}
+.tc-bar{width:170px;height:1px;background:rgba(233,227,214,.16);margin-top:9px}
+.tc-bar i{display:block;height:1px;background:var(--amber);width:0;transition:width .1s linear}
+
+/* ============ 角标 ============ */
+.comp{position:fixed;right:22px;bottom:22px;z-index:18;width:58px;height:58px;opacity:.55}
+.veil{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;align-items:center;
+  justify-content:center;transition:opacity .7s;pointer-events:none}
+.veil span{font-size:10px;letter-spacing:.3em;color:var(--dim)}
+body.ready .veil{opacity:0}
+.hideui .tb,.hideui .lp,.hideui .rp,.hideui .dock,.hideui #labels,.hideui .tourcap,.hideui .comp{opacity:0;pointer-events:none;transition:opacity .4s}
+
+/* ============ 响应式 ============ */
+@media (max-width:1180px){
+  .lp{width:200px}
+  .rp{width:238px}
+}
+@media (max-width:900px){
+  .lp{top:74px;left:10px;width:auto;max-width:170px}
+  .rp{top:74px;right:10px;width:190px}
+  .lp-h span,.rp-h span{display:none}
+  .prow .ptxt em{display:none}
+  #partList{max-height:38vh;overflow:auto}
+  .d-func{display:none}
+  .dock{left:10px;right:10px;transform:none;bottom:10px;flex-wrap:wrap;justify-content:center}
+  .slide{width:100%;justify-content:center}
+  .tourcap{left:14px;bottom:120px}
+}
+@media (max-width:560px){
+  .tb{gap:10px;padding:0 12px;height:54px}
+  .tb .sub,.tb .kv span,.tb .kv:nth-child(3){display:none}
+  .lp{max-width:150px}
+  .rp{width:150px}
+  .rp-h b{font-size:10px}
+  #detail{padding:10px}
+  .d-top b{font-size:13px}
+}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<!-- ============ 顶栏 ============ -->
+<header class="tb">
+  <span class="tag">EN-01</span>
+  <div>
+    <h1>液氧煤油发动机 · 分解总装</h1>
+    <div class="sub">LIQUID OXYGEN / KEROSENE ENGINE · DIGITAL MOCK-UP</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="kv"><b id="hudThrust">1 200 kN</b><span>海平面推力</span></div>
+  <div class="kv"><b id="hudParts">11</b><span>可拆部件</span></div>
+  <div class="kv"><b id="hudExplode">0%</b><span>分解状态</span></div>
+  <div class="kv"><b id="hudCycle">燃气发生器循环</b><span>18 000 rpm</span></div>
+</header>
+
+<!-- ============ 左：部件清单 ============ -->
+<aside class="lp">
+  <div class="lp-h"><b>部件清单</b><span>11 PARTS</span></div>
+  <div id="partList"></div>
+</aside>
+
+<!-- ============ 右：详情 ============ -->
+<aside class="rp">
+  <div class="rp-h"><b>零件规格</b><span>INSPECT</span></div>
+  <div id="detail"></div>
+</aside>
+
+<!-- ============ 投影标签 ============ -->
+<div id="labels"></div>
+
+<!-- ============ 巡游字幕 ============ -->
+<div class="tourcap" id="tourcap">
+  <div class="tc-num" id="tourNum">01 / 04</div>
+  <div class="tc-t" id="tourTitle">整体总装</div>
+  <div class="tc-e" id="tourEn">ASSEMBLED</div>
+  <div class="tc-bar"><i id="tourProg"></i></div>
+</div>
+
+<!-- ============ dock ============ -->
+<nav class="dock">
+  <button class="dbtn" id="btnExplode">分解 / 回装<u>Space</u></button>
+  <button class="dbtn" id="btnSection">透视<u>H</u></button>
+  <button class="dbtn" id="btnLabels">标注<u>L</u></button>
+  <button class="dbtn" id="btnTour">巡游<u>P</u></button>
+  <button class="dbtn" id="btnReset">复位<u>0</u></button>
+  <button class="dbtn" id="btnFull">全屏<u>F</u></button>
+  <div class="dsep"></div>
+  <div class="slide"><span>分解量</span><input id="explodeRange" type="range" min="0" max="100" value="0"><b id="hudExplode2">0%</b></div>
+</nav>
+
+<svg class="comp" viewBox="0 0 100 100" aria-hidden="true">
+  <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(233,227,214,.35)" stroke-width="1"/>
+  <path d="M50 12 L54 30 L50 27 L46 30 Z" fill="#f2a73b" opacity=".8"/>
+  <text x="50" y="72" text-anchor="middle" font-size="9" fill="rgba(233,227,214,.6)" font-family="Bahnschrift">EN-01</text>
+</svg>
+
+<div class="veil"><span>EN-01 · 建模装配中</span></div>
+
+<script>/*__THREE__*/</script>
+<script>/*__APP__*/</script>
+</body>
+</html>
