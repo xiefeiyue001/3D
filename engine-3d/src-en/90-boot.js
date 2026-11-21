@@ -94,14 +94,15 @@
     applyCam();
   }, { passive: false });
 
-  /* ---------- 巡游（4 章，24 s 循环） ---------- */
+  /* ---------- 巡游（4 章，32 s 循环，匀速环绕不回头） ---------- */
   const TOUR = [
-    { t: 0,  az: 0.62, el: 0.24, d: 5.4, ty: 1.35, ex: 0, sel: -1, title: '整体总装', en: 'ASSEMBLED' },
-    { t: 6,  az: 1.55, el: 0.30, d: 5.9, ty: 1.30, ex: 1, sel: -1, title: '分解视图', en: 'EXPLODED' },
-    { t: 12, az: 2.35, el: 0.20, d: 3.6, ty: 1.55, ex: 1, sel: 4, title: '涡轮泵', en: 'TURBOPUMP' },
-    { t: 18, az: 3.35, el: 0.26, d: 5.2, ty: 1.35, ex: 0, sel: -1, title: '回装', en: 'REASSEMBLY' }
+    { t: 0,  az: 0.62, el: 0.22, d: 5.40, ty: 1.35, ex: 0, sec: 0, title: '整体总装', en: 'ASSEMBLED' },
+    { t: 8,  az: 2.19, el: 0.26, d: 3.25, ty: 1.90, ex: 0, sec: 0, title: '动力头 · 涡轮泵', en: 'TURBOPUMP / POWERHEAD' },
+    { t: 16, az: 3.76, el: 0.10, d: 6.20, ty: 1.92, ex: 1, sec: 0, title: '十一部件分解', en: 'EXPLODED · 11 PARTS' },
+    { t: 24, az: 5.33, el: 0.24, d: 5.40, ty: 1.35, ex: 0, sec: 0, title: '回装', en: 'REASSEMBLY' }
   ];
-  let touring = false, tourT = 0;
+  const TOUR_LEN = 32;
+  let touring = false, tourT = 0, secMix = 0, secApplied = -1;
 
   DF.startTour = function () { touring = true; DF.state.auto = true; tourT = 0; document.getElementById('tourcap').classList.add('on'); };
   DF.stopTour = function () {
@@ -119,11 +120,11 @@
   function tourUpdate(dt) {
     if (!touring) return;
     tourT += dt;
-    if (tourT >= 24) tourT -= 24;
+    if (tourT >= TOUR_LEN) tourT -= TOUR_LEN;
     let i = 0;
     for (let k = 0; k < TOUR.length; k++) if (tourT >= TOUR[k].t) i = k;
     const a = TOUR[i], b = TOUR[(i + 1) % TOUR.length];
-    const seg = (i + 1) % TOUR.length === 0 ? 24 - a.t : b.t - a.t;
+    const seg = (i + 1) % TOUR.length === 0 ? TOUR_LEN - a.t : b.t - a.t;
     const u = DF.easeInOutCubic(DF.clamp((tourT - a.t) / seg, 0, 1));
     const nz = b.az + (b.az < a.az ? Math.PI * 2 : 0);
     rig.azim = DF.lerp(a.az, nz, u);
@@ -134,15 +135,17 @@
     applyCam();
 
     DF.setExplode(DF.lerp(a.ex, b.ex, u), true);
-    const sIdx = u > 0.15 ? a.sel : -1;
-    if (sIdx !== DF.state.sel) DF.selectPart(sIdx, false);
+
+    // 透视强度按章节平滑推进
+    const secTarget = a.sec || 0;
+    secMix = DF.damp(secMix, secTarget, 2.6, dt);
+    if (secApplied < 0 || Math.abs(secMix - secApplied) > 0.035 || (secTarget === 0 && secApplied !== 0)) {
+      DF.setSectionMix(secMix);
+      secApplied = secMix;
+    }
     DF.setTourCaption(a.title, a.en, i + 1, u);
   }
 
-  function setTourState(html) {
-    const cap = document.getElementById('tourcap');
-    if (cap && html) cap.innerHTML = html;
-  }
   DF.setTourCaption = function (title, en, n, u) {
     const cap = document.getElementById('tourcap');
     if (!cap) return;
@@ -160,7 +163,7 @@
     else if (k === 'l') DF.setLabels(!DF._labelsOn);
     else if (k === 'p') DF.toggleTour();
     else if (k === '0' || k === 'r') { DF.stopTour(); DF.resetView(); }
-    else if (k === 'f') { DF.toggleTour(); }
+    else if (k === 'f') { DF.toggleFull(); }
     else if (k >= '1' && k <= '9') { const i = +k - 1; if (i < DF.PARTS.length) DF.selectPart(i, false); }
     else if (k === 'escape') { DF.stopTour(); DF.selectPart(-1, false); }
   });
@@ -171,6 +174,12 @@
     DF.rig._distTarget = v > 0.5 ? 7.6 : 5.4;
     DF.rig._tyTarget = v > 0.5 ? 1.86 : 1.35;
   });
+
+  DF.toggleFull = function () {
+    if (!document.fullscreenElement) {
+      (document.documentElement.requestFullscreen || function () {}).call(document.documentElement);
+    } else if (document.exitFullscreen) document.exitFullscreen();
+  };
 
   DF.resetView = function () {
     rig.tx = 0; rig.ty = 1.35; rig.tz = 0;
@@ -205,7 +214,6 @@
     explode: document.getElementById('hudExplode'),
     fps: document.getElementById('hudFps')
   };
-  const infoEl = document.getElementById('hudInfo');
 
   /* ---------- 主循环 ---------- */
   let last = performance.now(), hudAcc = 0, frames = 0, fpsT = 0, fps = 60;
@@ -257,7 +265,7 @@
 
   /* ---------- 调试面 ---------- */
   DF.api = { rig, camera, scene, renderer, post, state: DF.state, parts: DF.PARTS,
-    select: DF.selectPart, explode: DF.setExplode, section: DF.setSection,
+    select: DF.selectPart, explode: DF.setExplode, section: DF.setSection, sectionMix: DF.setSectionMix,
     tour: DF.toggleTour, info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles }) };
 
 })(window.DF = window.DF || {});
