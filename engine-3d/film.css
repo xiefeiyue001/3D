@@ -1,0 +1,19 @@
+/* 纯净录屏层：只留 canvas，其余全部不渲染 */
+body.film .tb,
+body.film .lp,
+body.film .rp,
+body.film #labels,
+body.film .tourcap,
+body.film .comp,
+body.film .dock,
+body.film .veil { display: none !important; }
+
+body.film.curhide,
+body.film.curhide canvas { cursor: none; }
+
+#filmFade { position: fixed; inset: 0; z-index: 60; background: #05060a; pointer-events: none;
+  opacity: 1; transition: opacity 1.3s ease; }
+#filmFade.out { opacity: 0; }
+
+#filmBars { position: fixed; inset: 0; z-index: 55; pointer-events: none; display: none; }
+#filmBars i { position: absolute; left: 0; right: 0; height: 0; background: #000; }
