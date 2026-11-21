@@ -7,7 +7,7 @@
 
   DF.buildStudio = function (scene, renderer) {
     scene.background = DF.col(0x05060a);
-    scene.fog = new T.Fog(DF.col(0x05060a), 22, 78);
+    scene.fog = new T.Fog(DF.col(0x05060a), 18, 66);
 
     /* ---------- 环境光照（程序化柔光箱 → PMREM） ---------- */
     const pmrem = new T.PMREMGenerator(renderer);
@@ -32,7 +32,7 @@
     pmrem.dispose();
 
     /* ---------- 三点光 ---------- */
-    const key = new T.DirectionalLight(0xffeedd, 2.3);
+    const key = new T.DirectionalLight(0xffeedd, 2.55);
     key.position.set(-5.2, 7.6, 5.0);
     key.castShadow = true;
     key.shadow.mapSize.set(2048, 2048);
@@ -46,15 +46,15 @@
     scene.add(key.target);
     key.target.position.set(0, 1.2, 0);
 
-    const fill = new T.DirectionalLight(0x86aed6, 0.5);
+    const fill = new T.DirectionalLight(0x86aed6, 0.38);
     fill.position.set(6.0, 3.2, 4.2);
     scene.add(fill);
 
-    const rim = new T.DirectionalLight(0xb6d0f0, 1.15);
+    const rim = new T.DirectionalLight(0xb6d0f0, 1.35);
     rim.position.set(2.4, 5.0, -6.4);
     scene.add(rim);
 
-    const hemi = new T.HemisphereLight(0x2b3742, 0x07070a, 0.55);
+    const hemi = new T.HemisphereLight(0x2b3742, 0x07070a, 0.40);
     scene.add(hemi);
 
     const top = new T.DirectionalLight(0xdfe8f2, 0.42);
@@ -82,11 +82,33 @@
       ctx.strokeStyle = 'rgba(180,150,100,.10)';
       ctx.lineWidth = 1;
       ctx.strokeRect(0.5, 0.5, s - 1, s - 1);
-    }, [24, 24], false);
+    }, [64, 64], false);
+
+    /* 地台：半径 26 m 的大圆，用顶点色做径向衰减，边缘自溶进黑场（无地平硬边） */
+    const floorGeo = new T.CircleGeometry(26, 128);
+    {
+      const pos = floorGeo.attributes.position;
+      const cols = new Float32Array(pos.count * 3);
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i), y = pos.getY(i);
+        const r = Math.sqrt(x * x + y * y);
+        const t = DF.clamp((r - 1.9) / 11.5, 0, 1);
+        const k = Math.pow(1 - t, 2.6);
+        cols[i * 3] = k; cols[i * 3 + 1] = k; cols[i * 3 + 2] = k;
+      }
+      floorGeo.setAttribute('color', new T.BufferAttribute(cols, 3));
+    }
 
     const floor = new T.Mesh(
-      new T.CircleGeometry(9.5, 96),
-      new T.MeshStandardMaterial({ map: floorTex, color: DF.col(0x8f8c86), roughness: 0.95, metalness: 0.02, envMapIntensity: 0.05 })
+      floorGeo,
+      new T.MeshStandardMaterial({
+        map: floorTex,
+        color: DF.col(0x5f6165),
+        vertexColors: true,
+        roughness: 0.94,
+        metalness: 0.03,
+        envMapIntensity: 0.05
+      })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = 0;
@@ -97,7 +119,7 @@
     // 金属转台（发动机落座）
     const plinth = new T.Mesh(
       new T.CylinderGeometry(1.15, 1.28, 0.16, 72),
-      new T.MeshStandardMaterial({ color: DF.col(0x3a3f45), roughness: 0.38, metalness: 0.82, envMapIntensity: 0.35 })
+      new T.MeshStandardMaterial({ color: DF.col(0x262a2f), roughness: 0.52, metalness: 0.65, envMapIntensity: 0.22 })
     );
     plinth.position.y = 0.08;
     plinth.castShadow = true;
