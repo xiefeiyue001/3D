@@ -88,6 +88,24 @@
     DF.emit && DF.emit('section', on);
   };
 
+  /* 连续透视：0 = 实心，1 = 全外壳半透明（巡游里平滑过渡，避免硬跳） */
+  DF.setSectionMix = function (v) {
+    v = DF.clamp(v, 0, 1);
+    S.section = v > 0.02;
+    S.parts.forEach(grp => {
+      (grp.userData.meshes || []).forEach(m => {
+        const mt = m.material;
+        if (!mt || mt.isMeshBasicMaterial) return;
+        if (!mt.userData._base) mt.userData._base = { op: mt.opacity, tr: mt.transparent, dw: mt.depthWrite };
+        const b = mt.userData._base;
+        mt.transparent = v > 0.02 ? true : b.tr;
+        mt.opacity = DF.lerp(b.op, 0.26, v);
+        mt.depthWrite = v > 0.02 ? false : b.dw;
+        mt.needsUpdate = true;
+      });
+    });
+  };
+
   /* ---------- 拾取 ---------- */
   const ray = new T.Raycaster();
   const ndc = new T.Vector2();
